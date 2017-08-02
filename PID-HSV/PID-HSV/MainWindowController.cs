@@ -20,10 +20,11 @@ namespace PID_HSV
 
         private readonly OpenFileDialog openFileDialog;
         private readonly SaveFileDialog saveFileDialog;
-        private readonly Window ownerWindow;
+        public Window OwnerWindow { get; set; }
 
         private ImageBase _imgBase;
         private Bitmap _image;
+        private HSVOptions _hsvOptions;
 
         public Bitmap Image
         {
@@ -31,19 +32,24 @@ namespace PID_HSV
             private set => SetProperty(ref _image, value);
         }
 
-        public MainWindowController(Window ownerWindow)
+        public HSVOptions HsvOptions
         {
-            this.ownerWindow = ownerWindow;
+            get => _hsvOptions;
+            set => SetProperty(ref _hsvOptions, value);
+        }
+
+        public MainWindowController()
+        {
             OpenCommand = new Command(Open);
-            SaveCommand = new Command(Save);
-            ExportCommand = new Command(Export);
+            SaveCommand = new Command(Save, () => _imgBase != null);
+            ExportCommand = new Command(Export, () => _imgBase != null);
             ExitCommand = new Command(Exit);
 
             openFileDialog = new OpenFileDialog
             {
                 Title = "Open",
                 Filter = "Bitmap (*.bmp)|*.bmp|Pidmap (*.pmp)|*.pmp|Both (*.bmp;*.pmp)|*bmp;*.pmp",
-                FilterIndex = 1,
+                FilterIndex = 3,
                 RestoreDirectory = true
             };
 
@@ -56,14 +62,30 @@ namespace PID_HSV
 
         private void Open()
         {
-            var result = openFileDialog.ShowDialog(ownerWindow);
+            var result = openFileDialog.ShowDialog(OwnerWindow);
 
             if (!result.Value) return;
 
-            _imgBase = new ImageBase(openFileDialog.FileName);
+            try
+            {
+                _imgBase = new ImageBase(openFileDialog.FileName);
+            }
+            catch (Exception)
+            {
+                MessageBox.Show(OwnerWindow,
+                    "Um erro ocorreu durante a leitura do arquivo, caso a imagem for um BMP verifique se a mesma é true color (24 bits)",
+                    "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
+
+                return;
+            }
+
+            HsvOptions = new HSVOptions();
+            RegisterHsvEvent();
             Image = _imgBase.ToBitmap();
 
             openFileDialog.FileName = "";
+            SaveCommand.RaiseCanExecuteChanged();
+            ExportCommand.RaiseCanExecuteChanged();
         }
 
         private void Save()
@@ -72,11 +94,11 @@ namespace PID_HSV
             saveFileDialog.Filter = "Bitmap (*.bmp)|*.bmp";
             saveFileDialog.FilterIndex = 1;
 
-            var result = saveFileDialog.ShowDialog(ownerWindow);
+            var result = saveFileDialog.ShowDialog(OwnerWindow);
 
             if (!result.Value) return;
 
-            _imgBase.SaveBitmap(saveFileDialog.FileName);
+            _imgBase.SaveBitmap(saveFileDialog.FileName, HsvOptions);
 
             saveFileDialog.FileName = "";
         }
@@ -87,22 +109,31 @@ namespace PID_HSV
             saveFileDialog.Filter = "Pidmap (*.pmp)|*.pmp";
             saveFileDialog.FilterIndex = 1;
 
-            var result = saveFileDialog.ShowDialog(ownerWindow);
+            var result = saveFileDialog.ShowDialog(OwnerWindow);
 
             if (!result.Value) return;
 
-            _imgBase.SavePidmap(saveFileDialog.FileName);
+            _imgBase.SavePidmap(saveFileDialog.FileName, HsvOptions);
 
             saveFileDialog.FileName = "";
         }
 
         private void Exit()
         {
-            var result = MessageBox.Show(ownerWindow, "Are you sure you want to exit?", "Exit", MessageBoxButton.YesNo,
+            var result = MessageBox.Show(OwnerWindow, "Are you sure you want to exit?", "Exit", MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
 
             if (result == MessageBoxResult.Yes)
                 Application.Current.Shutdown();
+        }
+
+        private void RegisterHsvEvent()
+        {
+            _hsvOptions.PropertyChanged += (e, o) =>
+            {
+                Image.CopyBitmap(_imgBase, HsvOptions);
+                RaisePropertyChanged(nameof(Image));
+            };
         }
     }
 }

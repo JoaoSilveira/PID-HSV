@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
 using PID_HSV.Converter;
+using PID_HSV.Util;
 
 namespace PID_HSV.Image
 {
@@ -91,23 +92,14 @@ namespace PID_HSV.Image
         {
             Load(filename);
 
+            if (_infoHeader.BitCount != 24)
+                throw new Exception("Somente imagens true color (24 bits)");
+
             if (_fileHeader.IsBitmap)
                 ConvertToHSV();
         }
 
-        public void SavePidmap(string filename)
-        {
-            Save(filename, e => e);
-        }
-
-        public void SaveBitmap(string filename)
-        {
-            _fileHeader.Type = FileHeader.BitmapType;
-            Save(filename, RGBToHSVConverter.ConvertBack);
-            _fileHeader.Type = FileHeader.PidmapType;
-        }
-
-        private void Save(string filename, Func<byte[], byte[]> convert)
+        public void SavePidmap(string filename, HSVOptions opt)
         {
             using (var stream = File.OpenWrite(filename))
             {
@@ -125,12 +117,22 @@ namespace PID_HSV.Image
                         var widthInBytes = Width * 3;
                         var padding = new byte[LineStride - widthInBytes];
 
+                        var hue = (int)(opt.Hue / 359.0 * 255);
+                        var sat = (int)(opt.Saturation * 255);
+                        var val = (int)(opt.Value * 255);
+
                         for (var i = 0; i < Height; i++)
                         {
                             var line = ptr + i * LineStride;
                             for (var j = 0; j < widthInBytes; j += 3)
                             {
-                                var bytes = convert(new[] { line[j], line[j + 1], line[j + 2] });
+                                var bytes = new[]
+                                {
+                                    (byte)(line[j] + hue),
+                                    MathUtil.ClampByte(line[j + 1] + sat),
+                                    MathUtil.ClampByte(line[j + 2] + val)
+                                };
+
                                 stream.Write(bytes, 0, bytes.Length);
                             }
                             stream.Write(padding, 0, padding.Length);
@@ -138,6 +140,50 @@ namespace PID_HSV.Image
                     }
                 }
             }
+        }
+
+        public void SaveBitmap(string filename, HSVOptions opt)
+        {
+            _fileHeader.Type = FileHeader.BitmapType;
+            using (var stream = File.OpenWrite(filename))
+            {
+                using (var bw = new BinaryWriter(stream))
+                {
+                    bw.Write(TypeToByte(_fileHeader));
+                    bw.BaseStream.Position = 14;
+                    bw.Write(TypeToByte(_infoHeader));
+
+                    stream.Position = 54;
+
+                    unsafe
+                    {
+                        var ptr = (byte*)bytes.ToPointer();
+                        var widthInBytes = Width * 3;
+                        var padding = new byte[LineStride - widthInBytes];
+
+                        var hue = (int)(opt.Hue / 359.0 * 255);
+                        var sat = (int)(opt.Saturation * 255);
+                        var val = (int)(opt.Value * 255);
+
+                        for (var i = 0; i < Height; i++)
+                        {
+                            var line = ptr + i * LineStride;
+                            for (var j = 0; j < widthInBytes; j += 3)
+                            {
+                                var bytes = RGBToHSVConverter.ConvertBack(new[]
+                                {
+                                    (byte)(line[j] + hue),
+                                    MathUtil.ClampByte(line[j + 1] + sat),
+                                    MathUtil.ClampByte(line[j + 2] + val)
+                                });
+                                stream.Write(bytes, 0, bytes.Length);
+                            }
+                            stream.Write(padding, 0, padding.Length);
+                        }
+                    }
+                }
+            }
+            _fileHeader.Type = FileHeader.PidmapType;
         }
 
         private void ConvertToHSV()
@@ -178,7 +224,7 @@ namespace PID_HSV.Image
                 _infoHeader = ByteToType<InfoHeader>(stream);
 
                 if (!_fileHeader.IsPidmap && !_fileHeader.IsBitmap)
-                    throw new ArgumentException("Invalid Image Header");
+                    throw new Exception("Invalid Image Header");
 
                 LineStride = Width * 3;
 

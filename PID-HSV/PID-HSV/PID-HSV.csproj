@@ -34,6 +34,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -58,9 +59,11 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Converter\BitmapToSource.cs" />
+    <Compile Include="Converter\ObjectToBooleanConverter.cs" />
     <Compile Include="MainWindowController.cs" />
     <Compile Include="Util\BitmapExtensions.cs" />
     <Compile Include="Util\Command.cs" />
+    <Compile Include="Util\HSVOptions.cs" />
     <Compile Include="Util\MathUtil.cs" />
     <Compile Include="Util\ModelBase.cs" />
     <Compile Include="Util\ValueChangedEventArgs.cs" />

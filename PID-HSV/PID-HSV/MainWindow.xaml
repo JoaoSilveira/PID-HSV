@@ -6,9 +6,10 @@
         xmlns:local="clr-namespace:PID_HSV"
         xmlns:conv="clr-namespace:PID_HSV.Converter"
         mc:Ignorable="d"
-        Title="MainWindow" Height="400" Width="600">
+        Title="MainWindow" Height="400" Width="600" Loaded="Window_Loaded">
     <Window.Resources>
         <conv:BitmapToSource x:Key="BitmapToSource"></conv:BitmapToSource>
+        <conv:ObjectToBooleanConverter x:Key="ObjectToBooleanConverter"></conv:ObjectToBooleanConverter>
     </Window.Resources>
     <Window.InputBindings>
         <KeyBinding Key="O" Modifiers="Control" Command="{Binding Controller.OpenCommand, RelativeSource={RelativeSource AncestorType={x:Type local:MainWindow}}}"></KeyBinding>
@@ -24,16 +25,17 @@
         </Grid.RowDefinitions>
         <Menu x:Name="menu" VerticalAlignment="Top">
             <MenuItem Header="_File">
-                <MenuItem Header="_Open" Command="{Binding Controller.OpenCommand, RelativeSource={RelativeSource AncestorType={x:Type local:MainWindow}}}"/>
-                <MenuItem Header="_Save" Command="{Binding Controller.SaveCommand, RelativeSource={RelativeSource AncestorType={x:Type local:MainWindow}}}"/>
-                <MenuItem Header="_Export" Command="{Binding Controller.ExportCommand, RelativeSource={RelativeSource AncestorType={x:Type local:MainWindow}}}"/>
-                <MenuItem Header="E_xit" Command="{Binding Controller.ExitCommand, RelativeSource={RelativeSource AncestorType={x:Type local:MainWindow}}}"/>
+                <MenuItem Header="_Open" Command="{Binding Controller.OpenCommand, RelativeSource={RelativeSource AncestorType={x:Type local:MainWindow}}}" InputGestureText="Ctrl+O"/>
+                <MenuItem Header="_Save" Command="{Binding Controller.SaveCommand, RelativeSource={RelativeSource AncestorType={x:Type local:MainWindow}}}" InputGestureText="Ctrl+S"/>
+                <MenuItem Header="_Export" Command="{Binding Controller.ExportCommand, RelativeSource={RelativeSource AncestorType={x:Type local:MainWindow}}}" InputGestureText="Ctrl+E"/>
+                <MenuItem Header="E_xit" Command="{Binding Controller.ExitCommand, RelativeSource={RelativeSource AncestorType={x:Type local:MainWindow}}}" InputGestureText="Ctrl+X"/>
             </MenuItem>
-            <MenuItem Header="_Help"/>
         </Menu>
         <Image x:Name="image" Margin="10,5,10,0" Grid.Row="1" Source="{Binding Controller.Image, RelativeSource={RelativeSource AncestorType={x:Type local:MainWindow}}, Converter={StaticResource BitmapToSource}}"/>
-        <Grid Grid.Row="2" Margin="10, 0, 10, 10">
+        <Grid Grid.Row="2" Margin="10, 0, 10, 10" IsEnabled="{Binding Controller.Image, RelativeSource={RelativeSource AncestorType={x:Type local:MainWindow}}, Converter={StaticResource ObjectToBooleanConverter}}">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -45,10 +47,13 @@
             </Grid.ColumnDefinitions>
             <TextBox x:Name="textBox" Grid.Column="1" Height="23" Grid.Row="1" TextWrapping="NoWrap" Text="{Binding Value, ElementName=slider}"/>
             <TextBox x:Name="textBox1" Grid.Column="1" Height="23" Grid.Row="3" TextWrapping="NoWrap" Text="{Binding Value, ElementName=slider1}"  MaxWidth="40"/>
+            <TextBox x:Name="textBox2" Grid.Column="1" Height="23" Grid.Row="5" TextWrapping="NoWrap" Text="{Binding Value, ElementName=slider2}"  MaxWidth="40"/>
             <Label x:Name="label" Content="Hue" HorizontalAlignment="Center" VerticalAlignment="Top" Grid.ColumnSpan="2"/>
             <Label x:Name="label1" Content="Saturation" HorizontalAlignment="Center" Grid.Row="2" VerticalAlignment="Top"  Grid.ColumnSpan="2"/>
-            <Slider x:Name="slider" Grid.Row="1" VerticalAlignment="Center" Maximum="360" SmallChange="1" IsSnapToTickEnabled="True"/>
-            <Slider x:Name="slider1" Grid.Row="3" VerticalAlignment="Center" Maximum="1" Minimum="-1" SmallChange="0.01" LargeChange="0.1" IsSnapToTickEnabled="True" TickFrequency="0.01"/>
+            <Label x:Name="label2" Content="Value" HorizontalAlignment="Center" Grid.Row="4" VerticalAlignment="Top"  Grid.ColumnSpan="2"/>
+            <Slider x:Name="slider" Grid.Row="1" VerticalAlignment="Center" Maximum="359" SmallChange="1" IsSnapToTickEnabled="True" Value="{Binding Controller.HsvOptions.Hue, RelativeSource={RelativeSource AncestorType={x:Type local:MainWindow}}, Mode=TwoWay}"/>
+            <Slider x:Name="slider1" Grid.Row="3" VerticalAlignment="Center" Maximum="1" Minimum="-1" SmallChange="0.01" LargeChange="0.1" IsSnapToTickEnabled="True" TickFrequency="0.01" Value="{Binding Controller.HsvOptions.Saturation, RelativeSource={RelativeSource AncestorType={x:Type local:MainWindow}}, Mode=TwoWay}"/>
+            <Slider x:Name="slider2" Grid.Row="5" VerticalAlignment="Center" Maximum="1" Minimum="-1" SmallChange="0.01" LargeChange="0.1" IsSnapToTickEnabled="True" TickFrequency="0.01" Value="{Binding Controller.HsvOptions.Value, RelativeSource={RelativeSource AncestorType={x:Type local:MainWindow}}, Mode=TwoWay}"/>
         </Grid>
 
     </Grid>

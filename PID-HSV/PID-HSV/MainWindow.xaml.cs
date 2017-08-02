@@ -29,9 +29,14 @@ namespace PID_HSV
 
         public MainWindow()
         {
-            Controller = new MainWindowController(Owner);
+            Controller = new MainWindowController();
 
             InitializeComponent();
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            Controller.OwnerWindow = GetWindow(this);
         }
     }
 }
